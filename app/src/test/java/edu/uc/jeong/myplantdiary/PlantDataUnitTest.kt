@@ -5,8 +5,10 @@ import androidx.lifecycle.MutableLiveData
 import edu.uc.jeong.myplantdiary.ui.main.MainViewModel
 import edu.uc.jeong.myplantdiary.ui.main.dto.Plant
 import edu.uc.jeong.myplantdiary.ui.main.service.PlantService
+import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import org.junit.Test
 
 import org.junit.Assert.*
@@ -36,6 +38,13 @@ class PlantDataUnitTest {
         givenAFeedOfMockedPlantDataAreAvailable()
         whenSearchForRedbud()
         thenResultContainsEasternRedbud()
+        thenVerifyFunctionsInvoked()
+    }
+
+    private fun thenVerifyFunctionsInvoked() {
+        verify { plantService.fetchPlants("Redbud") }
+        verify(exactly = 0) { plantService.fetchPlants("Maple") }
+        confirmVerified(plantService)
     }
 
     private fun givenAFeedOfMockedPlantDataAreAvailable() {
@@ -55,8 +64,8 @@ class PlantDataUnitTest {
         allPlants.add(whiteOak)
 
         allPlantLiveData.postValue(allPlants)
-        every { plantService.fetchPlant(or("Redbud", "Quercus")) } returns allPlantLiveData
-        every { plantService.fetchPlant(not(or("Redbud", "Quercus"))) } returns MutableLiveData<ArrayList<Plant>>()
+        every { plantService.fetchPlants(or("Redbud", "Quercus")) } returns allPlantLiveData
+        every { plantService.fetchPlants(not(or("Redbud", "Quercus"))) } returns MutableLiveData<ArrayList<Plant>>()
         mvm.plantService = plantService
     }
 

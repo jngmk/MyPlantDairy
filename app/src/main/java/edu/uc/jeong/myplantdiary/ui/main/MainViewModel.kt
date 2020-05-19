@@ -10,7 +10,7 @@ class MainViewModel : ViewModel() {
     var plantService: PlantService = PlantService()
 
     fun fetchPlants(plantName: String) {
-        plants = plantService.fetchPlant(plantName)
+        plants = plantService.fetchPlants(plantName)
     }
     // TODO: Implement the ViewModel
 }
