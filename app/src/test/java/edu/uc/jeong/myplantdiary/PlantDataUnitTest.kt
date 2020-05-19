@@ -3,8 +3,8 @@ package edu.uc.jeong.myplantdiary
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.MutableLiveData
 import edu.uc.jeong.myplantdiary.ui.main.MainViewModel
-import edu.uc.jeong.myplantdiary.ui.main.dto.Plant
-import edu.uc.jeong.myplantdiary.ui.main.service.PlantService
+import edu.uc.jeong.myplantdiary.dto.Plant
+import edu.uc.jeong.myplantdiary.service.PlantService
 import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.mockk
@@ -75,7 +75,7 @@ class PlantDataUnitTest {
 
     private fun thenResultContainsEasternRedbud() {
         var redbudFound = false
-        mvm. plants.observeForever {
+        mvm.plants.observeForever {
             // here is where we do the observing
             assertNotNull(it)
             assertTrue(it.size > 0)
