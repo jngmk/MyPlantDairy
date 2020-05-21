@@ -19,7 +19,7 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
-        android:id="@+id/textView2"
+        android:id="@+id/lblLongitude"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
@@ -30,7 +30,7 @@
         app:layout_constraintTop_toBottomOf="@+id/lblLatitude" />
 
     <TextView
-        android:id="@+id/textView3"
+        android:id="@+id/lblLatitudeValue"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
@@ -41,15 +41,15 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
-        android:id="@+id/textView4"
+        android:id="@+id/lblLongitudeValue"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:layout_marginLeft="8dp"
         android:layout_marginTop="8dp"
         android:text="@string/zeropointzero"
-        app:layout_constraintStart_toEndOf="@+id/textView2"
-        app:layout_constraintTop_toBottomOf="@+id/textView3" />
+        app:layout_constraintStart_toEndOf="@+id/lblLongitude"
+        app:layout_constraintTop_toBottomOf="@+id/lblLatitudeValue" />
 
     <Spinner
         android:id="@+id/spnSpecimens"
@@ -57,7 +57,7 @@
         android:layout_height="wrap_content"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textView4" />
+        app:layout_constraintTop_toBottomOf="@+id/lblLongitudeValue" />
 
     <AutoCompleteTextView
         android:id="@+id/actPlantName"
