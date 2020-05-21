@@ -1,5 +1,6 @@
 package edu.uc.jeong.myplantdiary.ui.main
 
+import android.Manifest
 import android.app.Activity.RESULT_OK
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -32,12 +33,14 @@ class MainFragment : Fragment() {
     private val SAVE_IMAGE_REQUEST_CODE: Int = 1999
     private val CAMERA_REQUEST_CODE: Int = 1998
     private val CAMERA_PERMISSION_REQUEST_CODE = 1997
+    private val LOCATION_PERMISSION_REQUEST_CODE = 2000
 
     companion object {
         fun newInstance() = MainFragment()
     }
 
     private lateinit var viewModel: MainViewModel
+    private lateinit var locationViewModel: LocationViewModel
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View {
@@ -57,6 +60,24 @@ class MainFragment : Fragment() {
         btnLogon.setOnClickListener {
             prepOpenImageGallery()
         }
+        prepRequestLocationUpdates()
+    }
+
+    private fun prepRequestLocationUpdates() {
+        if (ContextCompat.checkSelfPermission(context!!, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            requestLocationUpdates()
+        } else {
+            val permissionRequest = arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
+            requestPermissions(permissionRequest, LOCATION_PERMISSION_REQUEST_CODE)
+        }
+    }
+
+    private fun requestLocationUpdates() {
+        locationViewModel = ViewModelProvider(this).get(LocationViewModel::class.java)
+        locationViewModel.getLocationLiveData().observe(viewLifecycleOwner, Observer {
+            lblLatitudeValue.text = it.latitude
+            lblLongitudeValue.text = it.longitude
+        })
     }
 
     private fun prepOpenImageGallery() {
@@ -68,10 +89,10 @@ class MainFragment : Fragment() {
 
     // See if we have permission or not
     private fun prepTakePhoto() {
-        if (ContextCompat.checkSelfPermission(context!!, android.Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(context!!, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
             takePhoto()
         } else {
-            val permissionRequest = arrayOf(android.Manifest.permission.CAMERA)  // arrayOf is to see array form
+            val permissionRequest = arrayOf(Manifest.permission.CAMERA)  // arrayOf is to see array form
             requestPermissions(permissionRequest, CAMERA_PERMISSION_REQUEST_CODE)
         }
     }
@@ -89,7 +110,13 @@ class MainFragment : Fragment() {
                     takePhoto()
                 } else {
                     Toast.makeText(context, "Unable to take photo without permission", Toast.LENGTH_LONG).show()
-
+                }
+            }
+            LOCATION_PERMISSION_REQUEST_CODE -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    requestLocationUpdates()
+                } else {
+                    Toast.makeText(context, "Unable to update location without permission", Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -104,7 +131,7 @@ class MainFragment : Fragment() {
             } else {
                 // if we are here, we have a valid intent
                 val photoFile: File = createImageFile()
-                photoFile?.also {
+                photoFile.also {
                     val photoURI = FileProvider.getUriForFile(activity!!.applicationContext, "com.myplantdiary.android.FileProvider", it)
                     takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI)
                     startActivityForResult(takePictureIntent, SAVE_IMAGE_REQUEST_CODE)
