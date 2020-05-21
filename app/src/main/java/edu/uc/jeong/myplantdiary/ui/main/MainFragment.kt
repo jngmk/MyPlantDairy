@@ -21,6 +21,7 @@ import androidx.core.content.FileProvider
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import edu.uc.jeong.myplantdiary.R
+import edu.uc.jeong.myplantdiary.dto.Specimen
 import kotlinx.android.synthetic.main.main_fragment.*
 import java.io.File
 import java.text.SimpleDateFormat
@@ -60,6 +61,9 @@ class MainFragment : Fragment() {
         btnLogon.setOnClickListener {
             prepOpenImageGallery()
         }
+        btnSave.setOnClickListener {
+            saveSpecimen()
+        }
         prepRequestLocationUpdates()
     }
 
@@ -77,7 +81,18 @@ class MainFragment : Fragment() {
         locationViewModel.getLocationLiveData().observe(viewLifecycleOwner, Observer {
             lblLatitudeValue.text = it.latitude
             lblLongitudeValue.text = it.longitude
-        })
+        })  
+    }
+
+    private fun saveSpecimen() {
+        var specimen = Specimen().apply {
+            latitude = lblLatitudeValue.text.toString()
+            longitute = lblLongitudeValue.text.toString()
+            plantName = actPlantName.text.toString()
+            description = txtDescription.text.toString()
+            datePlanted = txtDatePlanted.text.toString()
+
+        }
     }
 
     private fun prepOpenImageGallery() {
