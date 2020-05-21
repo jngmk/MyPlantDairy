@@ -106,7 +106,7 @@ class MainFragment : Fragment() {
                 val photoFile: File = createImageFile()
                 photoFile?.also {
                     val photoURI = FileProvider.getUriForFile(activity!!.applicationContext, "com.myplantdiary.android.FileProvider", it)
-                    takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoFile)
+                    takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI)
                     startActivityForResult(takePictureIntent, SAVE_IMAGE_REQUEST_CODE)
                 }
             }
