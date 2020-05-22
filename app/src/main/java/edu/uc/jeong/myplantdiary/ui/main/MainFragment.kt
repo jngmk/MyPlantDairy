@@ -6,7 +6,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder
-import androidx.lifecycle.ViewModelProviders
+import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
@@ -20,28 +20,38 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
+import com.firebase.ui.auth.AuthUI
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import edu.uc.jeong.myplantdiary.R
+import edu.uc.jeong.myplantdiary.dto.Photo
+import edu.uc.jeong.myplantdiary.dto.Plant
 import edu.uc.jeong.myplantdiary.dto.Specimen
 import kotlinx.android.synthetic.main.main_fragment.*
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.collections.ArrayList
 
 class MainFragment : Fragment() {
 
+    private lateinit var viewModel: MainViewModel
+    private lateinit var locationViewModel: LocationViewModel
     private lateinit var currentPhotoPath: String
-    private val IMAGE_GALLERY_REQUEST_CODE: Int = 2001
-    private val SAVE_IMAGE_REQUEST_CODE: Int = 1999
-    private val CAMERA_REQUEST_CODE: Int = 1998
     private val CAMERA_PERMISSION_REQUEST_CODE = 1997
+    private val CAMERA_REQUEST_CODE: Int = 1998
+    private val SAVE_IMAGE_REQUEST_CODE: Int = 1999
     private val LOCATION_PERMISSION_REQUEST_CODE = 2000
+    private val IMAGE_GALLERY_REQUEST_CODE: Int = 2001
+    private val AUTH_REQUEST_CODE = 2002
+    private var user: FirebaseUser? = null
+    private var photos: ArrayList<Photo> = ArrayList<Photo>()
+    private var photoURI : Uri? = null
+    private var _plantId = 0
 
     companion object {
         fun newInstance() = MainFragment()
     }
-
-    private lateinit var viewModel: MainViewModel
-    private lateinit var locationViewModel: LocationViewModel
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View {
@@ -55,16 +65,30 @@ class MainFragment : Fragment() {
         viewModel.plants.observe(viewLifecycleOwner, Observer {
             plants -> actPlantName.setAdapter(ArrayAdapter(context!!, R.layout.support_simple_spinner_dropdown_item, plants))  // context, view, content
         })
+        actPlantName.setOnItemClickListener { parent, view, position, id ->
+            var selectedPlant = parent.getItemAtPosition(position) as Plant
+            _plantId = selectedPlant.plantId
+        }
         btnTakePhoto.setOnClickListener {
             prepTakePhoto()
         }
         btnLogon.setOnClickListener {
-            prepOpenImageGallery()
+            logon()
         }
         btnSave.setOnClickListener {
             saveSpecimen()
         }
         prepRequestLocationUpdates()
+    }
+
+    private fun logon() {
+        var providers = arrayListOf(
+            AuthUI.IdpConfig.EmailBuilder().build(),
+            AuthUI.IdpConfig.GoogleBuilder().build()
+        )
+        startActivityForResult(
+            AuthUI.getInstance().createSignInIntentBuilder().setAvailableProviders(providers).build(), AUTH_REQUEST_CODE
+        )
     }
 
     private fun prepRequestLocationUpdates() {
@@ -91,8 +115,12 @@ class MainFragment : Fragment() {
             plantName = actPlantName.text.toString()
             description = txtDescription.text.toString()
             datePlanted = txtDatePlanted.text.toString()
-
+            plantId = _plantId
         }
+        viewModel.save(specimen, photos)
+
+        specimen = Specimen()
+        photos = ArrayList<Photo>()
     }
 
     private fun prepOpenImageGallery() {
@@ -147,7 +175,7 @@ class MainFragment : Fragment() {
                 // if we are here, we have a valid intent
                 val photoFile: File = createImageFile()
                 photoFile.also {
-                    val photoURI = FileProvider.getUriForFile(activity!!.applicationContext, "com.myplantdiary.android.FileProvider", it)
+                    photoURI = FileProvider.getUriForFile(activity!!.applicationContext, "com.myplantdiary.android.FileProvider", it)
                     takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI)
                     startActivityForResult(takePictureIntent, SAVE_IMAGE_REQUEST_CODE)
                 }
@@ -166,6 +194,8 @@ class MainFragment : Fragment() {
             }
             else if (requestCode == SAVE_IMAGE_REQUEST_CODE) {
                 Toast.makeText(context, "Image Saved", Toast.LENGTH_LONG).show()
+                var photo = Photo(localURI = photoURI.toString())
+                photos.add(photo)
             }
             else if (requestCode == IMAGE_GALLERY_REQUEST_CODE) {
                 if (data != null && data.data !== null) {  // data: stuff back to us, data.data: image uri user select
@@ -174,6 +204,9 @@ class MainFragment : Fragment() {
                     val bitmap = ImageDecoder.decodeBitmap(source)
                     imgPlant.setImageBitmap(bitmap)
                 }
+            }
+            else if (requestCode == AUTH_REQUEST_CODE) {
+                user = FirebaseAuth.getInstance().currentUser
             }
         }
     }
