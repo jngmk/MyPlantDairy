@@ -60,4 +60,5 @@ dependencies {
     implementation 'com.google.firebase:firebase-firestore:21.4.3'
     // firebase authentication
     implementation 'com.firebaseui:firebase-ui-auth:6.2.0'
+    implementation 'androidx.recyclerview:recyclerview:1.1.0'
 }

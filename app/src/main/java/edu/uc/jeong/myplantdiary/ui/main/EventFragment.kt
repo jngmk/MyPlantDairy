@@ -6,18 +6,20 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.recyclerview.widget.DefaultItemAnimator
+import androidx.recyclerview.widget.LinearLayoutManager
 
 import edu.uc.jeong.myplantdiary.R
 import edu.uc.jeong.myplantdiary.dto.Event
 import kotlinx.android.synthetic.main.event_fragment.*
 
-class EventFragment : Fragment() {
+class EventFragment : DiaryFragment() {
 
     companion object {
         fun newInstance() = EventFragment()
     }
 
-    private lateinit var viewModel: EventViewModel
+    private lateinit var viewModel: MainViewModel
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -28,10 +30,17 @@ class EventFragment : Fragment() {
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
-        viewModel = ViewModelProvider(this).get(EventViewModel::class.java)
+        viewModel = ViewModelProvider(this).get(MainViewModel::class.java)
         btnSaveEvent.setOnClickListener {
             saveEvent()
         }
+        btnTakeImagePhoto.setOnClickListener {
+            prepTakePhoto()
+        }
+        rcyEvents.hasFixedSize()
+        rcyEvents.layoutManager = LinearLayoutManager(context)
+        rcyEvents.itemAnimator = DefaultItemAnimator()
+        rcyEvents.adapter = EventsAdapter(viewModel.specimen.events, R.layout.rowlayout)
     }
 
     private fun saveEvent() {
@@ -45,8 +54,21 @@ class EventFragment : Fragment() {
             units = actUnits.text.toString()
             type = actEventType.text.toString()
             date = edtEventDate.text.toString()
-
+            if (photoURI != null) {
+                event.localPhotoURI = photoURI.toString()
+            }
         }
+        viewModel.specimen.events.add(event)
+        clearAll()
+        rcyEvents.adapter?.notifyDataSetChanged()
     }
 
+    private fun clearAll() {
+        edtEventDate.setText("")
+        actEventType.setText("")
+        edtQuantity.setText("")
+        actUnits.setText("")
+        edtDescription.setText("")
+        photoURI = null
+    }
 }
