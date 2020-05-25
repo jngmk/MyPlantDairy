@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.LinearLayoutManager
+import edu.uc.jeong.myplantdiary.MainActivity
 
 import edu.uc.jeong.myplantdiary.R
 import edu.uc.jeong.myplantdiary.dto.Event
@@ -37,6 +38,9 @@ class EventFragment : DiaryFragment() {
         btnTakeImagePhoto.setOnClickListener {
             prepTakePhoto()
         }
+        btnBackToSpecimen.setOnClickListener {
+            (activity as MainActivity).onSwipeRight()
+        }
         rcyEvents.hasFixedSize()
         rcyEvents.layoutManager = LinearLayoutManager(context)
         rcyEvents.itemAnimator = DefaultItemAnimator()
@@ -59,6 +63,7 @@ class EventFragment : DiaryFragment() {
             }
         }
         viewModel.specimen.events.add(event)
+        viewModel.save(event)
         clearAll()
         rcyEvents.adapter?.notifyDataSetChanged()
     }

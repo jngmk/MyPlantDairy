@@ -131,13 +131,13 @@ class MainViewModel : ViewModel() {
     private fun uploadPhotos(specimen: Specimen, photos: ArrayList<Photo>, user: FirebaseUser) {
         photos.forEach {
                 photo ->
-            var uri = Uri.parse(photo.localUri)
+            var uri = Uri.parse(photo.localURI)
             val imageRef = storageReferenence.child("images/" + user.uid + "/" + uri.lastPathSegment)
             val uploadTask = imageRef.putFile(uri)
             uploadTask.addOnSuccessListener {
                 val downloadUrl = imageRef.downloadUrl
                 downloadUrl.addOnSuccessListener {
-                    photo.remoteUri = it.toString()
+                    photo.remoteURI = it.toString()
                     // update our Cloud Firestore with the public image URI.
                     updatePhotoDatabase(specimen, photo)
                 }

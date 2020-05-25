@@ -1,41 +1,59 @@
 package edu.uc.jeong.myplantdiary
 
+import android.content.Intent
+import android.content.IntentFilter
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.GestureDetector
 import android.view.MotionEvent
+import android.widget.Toast
 import androidx.core.view.GestureDetectorCompat
+import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModelProvider
 import edu.uc.jeong.myplantdiary.ui.main.EventFragment
 import edu.uc.jeong.myplantdiary.ui.main.MainFragment
+import edu.uc.jeong.myplantdiary.ui.main.MainViewModel
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var detector: GestureDetectorCompat
+    private lateinit var eventFragment: EventFragment
+    private lateinit var mainFragment: MainFragment
+    private lateinit var activeFragment: Fragment
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
-
         super.onCreate(savedInstanceState)
         setContentView(R.layout.main_activity)
+        eventFragment = EventFragment.newInstance()
+        mainFragment = MainFragment.newInstance()
+        val viewModel = ViewModelProvider(this).get(MainViewModel::class.java)
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
-                    .replace(R.id.container, MainFragment.newInstance())
-                    .commitNow()
+                .replace(R.id.container, mainFragment)
+                .commitNow()
+            activeFragment = mainFragment
         }
-        detector = GestureDetectorCompat(this, DiaryGestureListener())  // wire up inner class to our activity
+        detector = GestureDetectorCompat(this, DiaryGestureListener())
+
+//        val notificationReceiver = NotificationReceiver()
+        val filter = IntentFilter()
+        filter.addAction(Intent.ACTION_POWER_CONNECTED)
+        filter.addAction(Intent.ACTION_POWER_DISCONNECTED)
+//        this.registerReceiver(notificationReceiver, filter)
     }
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         return if (detector.onTouchEvent(event)) {
-            // event was handled, nobody else needs to handle it
             true
         } else {
             super.onTouchEvent(event)
         }
     }
 
-    inner class DiaryGestureListener: GestureDetector.SimpleOnGestureListener() {
+    inner class DiaryGestureListener : GestureDetector.SimpleOnGestureListener() {
 
-        private val SWIPE_THRESHOLD = 100
+        private val  SWIPE_THRESHOLD = 100
         private val SWIPE_VELOCITY_THRESHOLD = 100
 
         override fun onFling(
@@ -44,32 +62,30 @@ class MainActivity : AppCompatActivity() {
             velocityX: Float,
             velocityY: Float
         ): Boolean {
-            var diffX = moveEvent?.x?.minus(downEvent!!.x) ?: 0.0F  // if null return 0.0
+            var diffX = moveEvent?.x?.minus(downEvent!!.x) ?: 0.0F
             var diffY = moveEvent?.y?.minus(downEvent!!.y) ?: 0.0F
 
             return if (Math.abs(diffX) > Math.abs(diffY)) {
                 // this is a left or right swipe
                 if (Math.abs(diffX) > SWIPE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
-                    if (diffX > 0) {
+                    if (diffX > 0 ) {
                         // right swipe
-                        this@MainActivity.onSWipeRight()
+                        this@MainActivity.onSwipeRight()
                     } else {
-                        // left swipe
-                        this@MainActivity.onSWipeLeft()
+                        // left swipe.
+                        this@MainActivity.onSwipeLeft()
                     }
                     true
-                } else {
+                } else  {
                     super.onFling(downEvent, moveEvent, velocityX, velocityY)
                 }
             } else {
-                // this is either a bottom or top swipe
+                // this is either a bottom or top swipe.
                 if (Math.abs(diffY) > SWIPE_THRESHOLD && Math.abs(velocityY) > SWIPE_VELOCITY_THRESHOLD) {
                     if (diffY > 0) {
-                        // top swipe
-                        this@MainActivity.onSWipeTop()
+                        this@MainActivity.onSwipeTop()
                     } else {
-                        // bottom swipe
-                        this@MainActivity.onSWipeBottom()
+                        this@MainActivity.onSwipeBottom()
                     }
                     true
                 } else {
@@ -79,21 +95,37 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun onSWipeBottom() {
-
+    private fun onSwipeBottom() {
+        Toast.makeText(this, "Bottom Swipe", Toast.LENGTH_LONG).show()
     }
 
-    private fun onSWipeTop() {
-
+    private fun onSwipeTop() {
+        Toast.makeText(this, "Top Swipe", Toast.LENGTH_LONG).show()
     }
 
-    private fun onSWipeLeft() {
-
+    internal fun onSwipeLeft() {
+        if (activeFragment == mainFragment) {
+            mainFragment.saveSpecimen()
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.container, eventFragment)
+                .commitNow()
+            activeFragment = eventFragment
+        }
     }
 
-    private fun onSWipeRight() {
-        supportFragmentManager.beginTransaction()
-            .replace(R.id.container, EventFragment.newInstance())
-            .commitNow()
+    internal fun onSwipeRight() {
+        if (activeFragment == eventFragment) {
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.container, mainFragment)
+                .commitNow()
+            activeFragment = mainFragment
+        }
     }
+
+//    internal fun onOpenMap() {
+//        supportFragmentManager.beginTransaction()
+//            .replace(R.id.container, DiaryMapFragment())
+//            .commitNow()
+//    }
+
 }

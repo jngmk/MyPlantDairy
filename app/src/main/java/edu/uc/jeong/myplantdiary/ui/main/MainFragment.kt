@@ -6,31 +6,29 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder
-import android.net.Uri
 import android.os.Bundle
-import android.os.Environment
 import android.provider.MediaStore
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.core.content.ContextCompat
-import androidx.core.content.FileProvider
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
+import androidx.recyclerview.widget.DefaultItemAnimator
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.firebase.ui.auth.AuthUI
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+import edu.uc.jeong.myplantdiary.MainActivity
 import edu.uc.jeong.myplantdiary.R
+import edu.uc.jeong.myplantdiary.dto.Event
 import edu.uc.jeong.myplantdiary.dto.Photo
 import edu.uc.jeong.myplantdiary.dto.Plant
 import edu.uc.jeong.myplantdiary.dto.Specimen
 import kotlinx.android.synthetic.main.main_fragment.*
-import java.io.File
-import java.text.SimpleDateFormat
-import java.util.*
 import kotlin.collections.ArrayList
 
 class MainFragment : DiaryFragment() {
@@ -43,6 +41,8 @@ class MainFragment : DiaryFragment() {
     private val AUTH_REQUEST_CODE = 2002
     private var user: FirebaseUser? = null
     private var photos: ArrayList<Photo> = ArrayList<Photo>()
+    private var specimen = Specimen()
+    private var _events = ArrayList<Event>()
     private var _plantId = 0
 
     companion object {
@@ -56,10 +56,12 @@ class MainFragment : DiaryFragment() {
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
-//        viewModel = ViewModelProviders.of(this).get(MainViewModel::class.java)  <- depreciated
         viewModel = ViewModelProvider(this).get(MainViewModel::class.java)
         viewModel.plants.observe(viewLifecycleOwner, Observer {
             plants -> actPlantName.setAdapter(ArrayAdapter(context!!, R.layout.support_simple_spinner_dropdown_item, plants))  // context, view, content
+        })
+        viewModel.specimens.observe(viewLifecycleOwner, Observer {
+            specimens -> spnSpecimens.setAdapter(ArrayAdapter(context!!, R.layout.support_simple_spinner_dropdown_item, specimens))
         })
         actPlantName.setOnItemClickListener { parent, view, position, id ->
             var selectedPlant = parent.getItemAtPosition(position) as Plant
@@ -74,7 +76,66 @@ class MainFragment : DiaryFragment() {
         btnSave.setOnClickListener {
             saveSpecimen()
         }
+        btnForward.setOnClickListener {
+            (activity as MainActivity).onSwipeLeft()
+        }
         prepRequestLocationUpdates()
+        spnSpecimens.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            /**
+             * Callback method to be invoked when the selection disappears from this
+             * view. The selection can disappear for instance when touch is activated
+             * or when the adapter becomes empty.
+             *
+             * @param parent The AdapterView that now contains no selected item.
+             */
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+                TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+            }
+
+            /**
+             *
+             * Callback method to be invoked when an item in this view has been
+             * selected. This callback is invoked only when the newly selected
+             * position is different from the previously selected position or if
+             * there was no selected item.
+             *
+             * Implementers can call getItemAtPosition(position) if they need to access the
+             * data associated with the selected item.
+             *
+             * @param parent The AdapterView where the selection happened
+             * @param view The view within the AdapterView that was clicked
+             * @param position The position of the view in the adapter
+             * @param id The row id of the item that is selected
+             */
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long
+            ) {
+                specimen = parent?.getItemAtPosition(position) as Specimen
+                // use this specimen object to populate our UI fields
+                actPlantName.setText(specimen.plantName)
+                txtDescription.setText(specimen.description)
+                txtDatePlanted.setText(specimen.datePlanted)
+                viewModel.specimen = specimen
+                // trigger an update of the events for this specimen.
+                viewModel.fetchEvents()
+            }
+        }
+        rcyEvents.hasFixedSize()
+        rcyEvents.layoutManager = LinearLayoutManager(context)
+        rcyEvents.itemAnimator = DefaultItemAnimator()
+        rcyEvents.adapter = EventsAdapter(_events, R.layout.rowlayout)
+        viewModel.events.observe(viewLifecycleOwner, Observer {
+            events ->
+            // remove everything that is in there
+            _events.removeAll(_events)
+            // update with the new events that we have observed
+            _events.addAll(events)
+            // tell the recycler view to update
+            rcyEvents.adapter!!.notifyDataSetChanged()
+        })
     }
 
     private fun logon() {
@@ -104,19 +165,31 @@ class MainFragment : DiaryFragment() {
         })  
     }
 
-    private fun saveSpecimen() {
-        var specimen = Specimen().apply {
+    /**
+     * Persist our specimen to long term storage.
+     */
+    internal fun saveSpecimen() {
+        storeSpecimen()
+
+        viewModel.save(specimen, photos, user!!)
+
+        specimen = Specimen()
+        photos = ArrayList<Photo>()
+    }
+
+    /**
+     * Populate a specimen object based on the details entered into the user interface.
+     */
+    internal fun storeSpecimen() {
+        specimen.apply {
             latitude = lblLatitudeValue.text.toString()
-            longitute = lblLongitudeValue.text.toString()
+            longitude = lblLongitudeValue.text.toString()
             plantName = actPlantName.text.toString()
             description = txtDescription.text.toString()
             datePlanted = txtDatePlanted.text.toString()
             plantId = _plantId
         }
-        viewModel.save(specimen, photos)
-
-        specimen = Specimen()
-        photos = ArrayList<Photo>()
+        viewModel.specimen = specimen
     }
 
     private fun prepOpenImageGallery() {
@@ -155,7 +228,6 @@ class MainFragment : DiaryFragment() {
             if (requestCode == CAMERA_REQUEST_CODE) {
                 // now we can get the thumbnail
                 val imageBitmap = data!!.extras!!.get("data") as Bitmap
-                imgPlant.setImageBitmap(imageBitmap)
             }
             else if (requestCode == SAVE_IMAGE_REQUEST_CODE) {
                 Toast.makeText(context, "Image Saved", Toast.LENGTH_LONG).show()
@@ -167,7 +239,6 @@ class MainFragment : DiaryFragment() {
                     val image = data.data
                     val source = ImageDecoder.createSource(activity!!.contentResolver, image!!)
                     val bitmap = ImageDecoder.decodeBitmap(source)
-                    imgPlant.setImageBitmap(bitmap)
                 }
             }
             else if (requestCode == AUTH_REQUEST_CODE) {
