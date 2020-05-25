@@ -6,4 +6,8 @@
     <string name="plantName">Plant Name</string>
     <string name="description">Description</string>
     <string name="datePlanted">Date Planted</string>
+    <string name="eventType">Event Type</string>
+    <string name="qunatity">Quantity</string>
+    <string name="units">Units (Gallons, Cups, etc)</string>
+    <string name="eventDate">Event Date</string>
 </resources>
